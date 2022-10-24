@@ -1,65 +1,60 @@
 const express = require('express');
 const employeeModel = require('../models/employee');
 const mongoose = require("mongoose");
+const { request } = require('express');
 const app = express.Router()
-
 
   
   //Read ALL
-app.get('/api/emp/employees', async (req, res) => {
-    const employees = await employeeModel.find({});
-  
-  
+app.get('/employees', async (req, res) => {
+    const employees = new employeeModel(request.body);
     try {
+      await employees.save();
       res.status(200).send(employees);
     } catch (err) {
       res.status(500).send(err);
     }
   });
   
-app.post('/api/emp/employees', async (req, res) => {
-    const employee = new employeeModel(req.body);
-  
-    try {
-      await employee.save();
-      res.status(201).send(employee);
-    } catch (err) {
-      res.status(500).send(err);
+app.post('/employees',async(request,response) =>{
+    const employee = new employeeModel(request.body);
+    try{
+        await employee.save();
+        response.status(201).send(employee);
+    }catch(error){
+        response.status(400).send(employee);
     }
-  });
+});
   
   
   //Get employee by id
-app.get('/api/emp/employees/:id', async (req, res) => {
-    const idfind = req.params.id
-    console.log(idfind)
-  
-    const employees = await employeeModel.findById(idfind);
-  
-    try {
-      res.status(200).send(employees);
-    } catch (err) {
-      res.status(500).send(err);
+app.get('/employees/:empID',async(request,response) =>{
+    try{
+        response.send(await employeeModel.findById(request.params.empID,request.body));
+    }catch(error){
+        response.status(400).send(error);
     }
-  });
+});
   
   
   //Update Record
-app.put('/api/emp/employees/:id', async (req, res) => {
+app.put("/employees/:empID", async (req, res) => {
     try {
-      await employeeModel.findByIdAndUpdate(req.params.id, req.body)
-      await employeeModel.save()
-      res.status(200).send(employee)
-    } catch (err) {
-      res.status(500).send(err)
+        const updateEmployee = await employee.findByIdAndUpdate(req.params.empID, req.body);
+        res.status(200).json(updateEmployee);
+    } 
+    catch (error) {
+        // if employee was not found
+        if (error.kind === "ObjectId") {
+            res.status(400).json({ "message": `employee with id: ${req.params.empID} was not found` });
+        }
+        else {
+            res.status(400).json({ "message": error.message })
+        }
     }
-  })
-  
-  
-  
-  
-  //Delete Record
-  //localhost:8081/employee/5d1f6c3e4b0b88fb1d257237
+});
+
+//Delete Record
 app.delete("/employees/:empID",async(request,response) =>{
     try{
         await employeeModel.findByIdAndDelete(request.params.empID);
@@ -69,7 +64,5 @@ app.delete("/employees/:empID",async(request,response) =>{
     }
 });
   
-  module.exports = app
-
 
 module.exports = app
